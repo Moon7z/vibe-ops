@@ -1,0 +1,90 @@
+package com.vibeops.mcp;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+/**
+ * HTTP transport for the MCP Server (Streamable HTTP).
+ * Handles JSON-RPC requests for initialize, tools/list, and tools/call.
+ */
+@RestController
+@RequestMapping("/mcp")
+public class McpServerController {
+
+    private static final Logger log = LoggerFactory.getLogger(McpServerController.class);
+
+    private final McpToolRegistry registry;
+    private final ObjectMapper objectMapper;
+
+    @Value("${vibeops.mcp.version}")
+    private String protocolVersion;
+
+    @Value("${vibeops.mcp.server-name}")
+    private String serverName;
+
+    @Value("${vibeops.mcp.server-version}")
+    private String serverVersion;
+
+    public McpServerController(McpToolRegistry registry, ObjectMapper objectMapper) {
+        this.registry = registry;
+        this.objectMapper = objectMapper;
+    }
+
+    @PostMapping
+    public ResponseEntity<McpProtocol.JsonRpcResponse> handleRpc(
+            @RequestBody McpProtocol.JsonRpcRequest request) {
+
+        log.info("MCP request: method={}, id={}", request.method(), request.id());
+
+        return switch (request.method()) {
+            case "initialize" -> handleInitialize(request);
+            case "tools/list" -> handleToolsList(request);
+            case "tools/call" -> handleToolCall(request);
+            default -> ResponseEntity.ok(
+                    McpProtocol.JsonRpcResponse.error(-32601, "Method not found: " + request.method(), request.id())
+            );
+        };
+    }
+
+    private ResponseEntity<McpProtocol.JsonRpcResponse> handleInitialize(McpProtocol.JsonRpcRequest request) {
+        var result = new McpProtocol.InitializeResult(
+                protocolVersion,
+                new McpProtocol.ServerCapabilities(new McpProtocol.ToolsCapability(false)),
+                new McpProtocol.ServerInfo(serverName, serverVersion)
+        );
+        return ResponseEntity.ok(McpProtocol.JsonRpcResponse.success(result, request.id()));
+    }
+
+    private ResponseEntity<McpProtocol.JsonRpcResponse> handleToolsList(McpProtocol.JsonRpcRequest request) {
+        var result = new McpProtocol.ToolListResult(registry.listTools());
+        return ResponseEntity.ok(McpProtocol.JsonRpcResponse.success(result, request.id()));
+    }
+
+    @SuppressWarnings("unchecked")
+    private ResponseEntity<McpProtocol.JsonRpcResponse> handleToolCall(McpProtocol.JsonRpcRequest request) {
+        try {
+            var params = objectMapper.convertValue(request.params(), McpProtocol.ToolCallParams.class);
+            McpTool tool = registry.getTool(params.name());
+
+            if (tool == null) {
+                return ResponseEntity.ok(McpProtocol.JsonRpcResponse.success(
+                        McpProtocol.ToolResult.error("Unknown tool: " + params.name()), request.id()));
+            }
+
+            Map<String, Object> args = params.arguments() != null ? params.arguments() : Map.of();
+            McpProtocol.ToolResult result = tool.execute(args);
+            return ResponseEntity.ok(McpProtocol.JsonRpcResponse.success(result, request.id()));
+
+        } catch (Exception e) {
+            log.error("Tool execution failed", e);
+            return ResponseEntity.ok(McpProtocol.JsonRpcResponse.success(
+                    McpProtocol.ToolResult.error("Execution error: " + e.getMessage()), request.id()));
+        }
+    }
+}

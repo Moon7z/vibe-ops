@@ -1,0 +1,55 @@
+package com.vibeops;
+
+import com.vibeops.mcp.McpProtocol;
+import com.vibeops.mcp.McpToolRegistry;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest
+class VibeOpsApplicationTests {
+
+    @Autowired
+    private McpToolRegistry registry;
+
+    @Test
+    void contextLoads() {
+        assertNotNull(registry);
+    }
+
+    @Test
+    void allToolsRegistered() {
+        var tools = registry.listTools();
+        assertEquals(2, tools.size());
+
+        var names = tools.stream().map(McpProtocol.ToolDefinition::name).toList();
+        assertTrue(names.contains("analyze-vibe"));
+        assertTrue(names.contains("run-vibe-check"));
+    }
+
+    @Test
+    void analyzeVibeReturnsReport() {
+        var tool = registry.getTool("analyze-vibe");
+        var result = tool.execute(java.util.Map.of(
+                "prompt", "Build a REST API with JWT auth, retry logic, and unit tests"
+        ));
+        assertFalse(result.isError());
+        String text = result.content().getFirst().text();
+        assertTrue(text.contains("Vibe Analysis Report"));
+        assertTrue(text.contains("COVERED") || text.contains("PARTIAL"));
+    }
+
+    @Test
+    void runVibeCheckScansFiles() {
+        var tool = registry.getTool("run-vibe-check");
+        // Scan the project's own source
+        var result = tool.execute(java.util.Map.of(
+                "path", System.getProperty("user.dir") + "/src/main/java"
+        ));
+        assertFalse(result.isError());
+        String text = result.content().getFirst().text();
+        assertTrue(text.contains("Vibe-Check Scan Report"));
+    }
+}
