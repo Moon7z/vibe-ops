@@ -36,6 +36,21 @@ public class McpServerController {
         this.objectMapper = objectMapper;
     }
 
+    @GetMapping
+    public ResponseEntity<Map<String, Object>> status() {
+        var tools = registry.listTools();
+        return ResponseEntity.ok(Map.of(
+                "status", "running",
+                "server", serverName,
+                "version", serverVersion,
+                "protocol", protocolVersion,
+                "tools", tools.stream().map(t -> Map.of(
+                        "name", t.name(),
+                        "description", t.description()
+                )).toList()
+        ));
+    }
+
     @PostMapping
     public ResponseEntity<McpProtocol.JsonRpcResponse> handleRpc(
             @RequestBody McpProtocol.JsonRpcRequest request) {
