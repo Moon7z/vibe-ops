@@ -64,6 +64,29 @@ public class CodeDiffReader {
 
     private List<String> getGitChangedFiles(Path root) {
         try {
+            // Verify this directory is actually a git root (has .git)
+            // to avoid inheriting a parent repo's state
+            ProcessBuilder checkGit = new ProcessBuilder(
+                    "git", "rev-parse", "--show-toplevel"
+            );
+            checkGit.directory(root.toFile());
+            checkGit.redirectErrorStream(true);
+            Process checkProcess = checkGit.start();
+            String topLevel = new String(checkProcess.getInputStream().readAllBytes()).trim();
+            int checkExit = checkProcess.waitFor();
+
+            if (checkExit != 0) {
+                return List.of();
+            }
+
+            // Ensure the git root matches this project root
+            Path gitRoot = Path.of(topLevel).toRealPath();
+            Path projectRoot = root.toRealPath();
+            if (!gitRoot.equals(projectRoot)) {
+                log.info("Project dir is not a git root (git root: {}), skipping git diff", gitRoot);
+                return List.of();
+            }
+
             ProcessBuilder pb = new ProcessBuilder(
                     "git", "diff", "--name-only", "HEAD"
             );
@@ -74,13 +97,16 @@ public class CodeDiffReader {
             int exitCode = process.waitFor();
 
             if (exitCode != 0) {
-                // Try staged files if HEAD doesn't exist (initial commit)
                 pb = new ProcessBuilder("git", "diff", "--name-only", "--cached");
                 pb.directory(root.toFile());
                 pb.redirectErrorStream(true);
                 process = pb.start();
                 output = new String(process.getInputStream().readAllBytes());
-                process.waitFor();
+                exitCode = process.waitFor();
+            }
+
+            if (exitCode != 0) {
+                return List.of();
             }
 
             return output.lines()

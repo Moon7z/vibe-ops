@@ -42,7 +42,7 @@ class VibeOpsApplicationTests {
                 "prompt", "Build a REST API with JWT auth, retry logic, and unit tests"
         ));
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("Vibe Analysis Report"));
         assertTrue(text.contains("COVERED") || text.contains("PARTIAL"));
     }
@@ -55,7 +55,7 @@ class VibeOpsApplicationTests {
                 "path", System.getProperty("user.dir") + "/src/main/java"
         ));
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("Vibe-Check Scan Report"));
     }
 }

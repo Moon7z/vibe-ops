@@ -37,7 +37,7 @@ class DiagnoseFailureToolTest {
         ));
 
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("Failure Diagnosis Report"));
         assertTrue(text.contains("CRITICAL"));
         assertTrue(text.contains("OOM"));
@@ -57,7 +57,7 @@ class DiagnoseFailureToolTest {
         ));
 
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("NPE"));
         assertTrue(text.contains("DB_CONNECTION"));
         assertTrue(text.contains("MISSING_CONFIG"));
@@ -71,7 +71,7 @@ class DiagnoseFailureToolTest {
         ));
 
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("No Known Error Patterns"));
     }
 }

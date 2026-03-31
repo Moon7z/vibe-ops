@@ -49,7 +49,7 @@ class GenerateTestsToolTest {
         ));
 
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("Calculator"));
         assertTrue(text.contains("AI Prompt"));
     }
@@ -71,7 +71,7 @@ class GenerateTestsToolTest {
         ));
 
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("Created"));
 
         // Verify the stub file was actually written
@@ -99,7 +99,7 @@ class GenerateTestsToolTest {
         ));
 
         assertFalse(result.isError());
-        String text = result.content().getFirst().text();
+        String text = result.content().get(0).text();
         assertTrue(text.contains("Skipped"));
 
         // Verify existing test was NOT overwritten

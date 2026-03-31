@@ -23,7 +23,7 @@ class ErrorAnalyzerTest {
         var result = analyzer.analyze(logs);
 
         assertFalse(result.errors().isEmpty());
-        assertEquals("OOM", result.errors().getFirst().pattern().id());
+        assertEquals("OOM", result.errors().get(0).pattern().id());
         assertEquals(ErrorAnalyzer.Severity.CRITICAL, result.severity());
     }
 

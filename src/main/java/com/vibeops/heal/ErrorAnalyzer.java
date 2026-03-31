@@ -115,7 +115,7 @@ public class ErrorAnalyzer {
         Severity severity = determineSeverity(matchedErrors);
 
         // Determine primary error (first critical, or first match)
-        String primaryError = matchedErrors.isEmpty() ? null : matchedErrors.getFirst().pattern().id();
+        String primaryError = matchedErrors.isEmpty() ? null : matchedErrors.get(0).pattern().id();
 
         return new AnalysisResult(matchedErrors, stackTraces, severity, primaryError);
     }
