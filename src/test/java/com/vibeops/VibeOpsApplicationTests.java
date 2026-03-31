@@ -22,7 +22,7 @@ class VibeOpsApplicationTests {
     @Test
     void allToolsRegistered() {
         var tools = registry.listTools();
-        assertEquals(6, tools.size());
+        assertEquals(8, tools.size());
 
         var names = tools.stream().map(McpProtocol.ToolDefinition::name).toList();
         assertTrue(names.contains("analyze-vibe"));
@@ -31,6 +31,8 @@ class VibeOpsApplicationTests {
         assertTrue(names.contains("run-tests"));
         assertTrue(names.contains("test-gate"));
         assertTrue(names.contains("generate-infra"));
+        assertTrue(names.contains("diagnose-failure"));
+        assertTrue(names.contains("auto-heal"));
     }
 
     @Test

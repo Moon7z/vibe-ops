@@ -62,9 +62,9 @@ com.vibeops
 ├── mcp/           # MCP protocol layer (transport + registry)
 ├── spec/          # Spec-Verifier module (analyze-vibe)
 ├── scan/          # Static scanner module (run-vibe-check)
-├── test/          # Test-Autopilot module (Phase 2)
-├── deploy/        # Ghost-Deployer module (Phase 3)
-└── heal/          # Self-Healing Agent module (Phase 3)
+├── test/          # Test-Autopilot module (generate-tests, run-tests, test-gate)
+├── deploy/        # Ghost-Deployer module (generate-infra)
+└── heal/          # Self-Healing Agent module (diagnose-failure, auto-heal)
 ```
 
 Each module is a standalone package. Cross-module communication happens only through the MCP tool interface or Spring events.
@@ -82,3 +82,32 @@ The overall deployment gate is determined by the highest severity finding:
 
 ---
 *Vibe-Ops v0.1.0 — Making AI-generated code production-ready.*
+
+## 7. Self-Healing Error Classification
+
+The Self-Healing Agent classifies runtime errors into the following categories:
+
+| Category | Severity | Example | Repair Type |
+|----------|----------|---------|-------------|
+| RESOURCE | CRITICAL | OutOfMemoryError, OOMKilled | Infra (scale memory) |
+| SECURITY | CRITICAL | 401/403, AuthenticationException | Config (rotate credentials) |
+| CONNECTIVITY | HIGH | Connection refused, JDBC failure | Config/Diagnostic |
+| RUNTIME | HIGH | CrashLoopBackOff, probe failure | Config (adjust probes) |
+| DEPLOYMENT | HIGH | ImagePullBackOff | Infra (fix image/registry) |
+| CONFIGURATION | MEDIUM | Missing placeholder, BeanCreationException | Config/Code fix |
+| CODE_BUG | MEDIUM | NullPointerException, StackOverflow | Code fix (AI repair) |
+| DATA | MEDIUM | Migration failure | Code fix |
+| DEPENDENCY | MEDIUM | ClassNotFoundException | Code fix (deps) |
+
+## 8. MCP Tool Reference
+
+| # | Tool | Module | Purpose |
+|---|------|--------|---------|
+| 1 | `analyze-vibe` | Spec-Verifier | 8-dimension production-readiness analysis |
+| 2 | `run-vibe-check` | Static Scanner | 11-rule static code scan |
+| 3 | `generate-tests` | Test-Autopilot | AI test prompt / stub generation |
+| 4 | `run-tests` | Test-Autopilot | Maven test execution with report |
+| 5 | `test-gate` | Test Gate | Unified quality gate (test + coverage) |
+| 6 | `generate-infra` | Ghost-Deployer | Dockerfile + Compose + CI/CD generation |
+| 7 | `diagnose-failure` | Self-Healing | Error log analysis + repair suggestions |
+| 8 | `auto-heal` | Self-Healing | Full pipeline: monitor → diagnose → repair |
