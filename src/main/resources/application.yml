@@ -1,0 +1,72 @@
+spring:
+  application:
+    name: vibe-ops
+  threads:
+    virtual:
+      enabled: false
+
+server:
+  port: 3100
+
+# MCP Server config
+vibeops:
+  mcp:
+    version: "2024-11-05"
+    server-name: vibe-ops
+    server-version: "0.1.0"
+
+  # Timeouts
+  execution:
+    timeout-seconds: 120
+    max-retries: 3
+
+  # Auth config
+  auth:
+    enabled: false
+    type: api-key
+    api-key: ""
+    jwt-secret: ""
+    jwt-expiration: 86400000
+    ip-whitelist: []
+
+  # Auto-heal config
+  auto-heal:
+    mode: propose-only
+    require-approval: true
+    max-auto-fixes-per-hour: 3
+    rollback-retention: 24h
+    backup-dir: .vibeops/backup
+
+  # Test gate profiles
+  test-gate:
+    active-profile: development
+    profiles:
+      development:
+        coverage-threshold: 50.0
+        block-on-failure: false
+        allow-skip-tests: true
+        required-checks: []
+      staging:
+        coverage-threshold: 70.0
+        block-on-failure: true
+        allow-skip-tests: false
+        required-checks:
+          - unit_tests
+          - integration_tests
+      production:
+        coverage-threshold: 85.0
+        block-on-failure: true
+        allow-skip-tests: false
+        required-checks:
+          - unit_tests
+          - integration_tests
+          - security_scan
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  metrics:
+    tags:
+      application: vibeops

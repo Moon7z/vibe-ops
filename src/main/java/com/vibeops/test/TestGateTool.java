@@ -23,11 +23,14 @@ public class TestGateTool implements McpTool {
     private final CodeDiffReader diffReader;
     private final TestPromptEngine promptEngine;
     private final MavenTestExecutor executor;
+    private final TestGateConfig gateConfig;
 
-    public TestGateTool(CodeDiffReader diffReader, TestPromptEngine promptEngine, MavenTestExecutor executor) {
+    public TestGateTool(CodeDiffReader diffReader, TestPromptEngine promptEngine,
+                        MavenTestExecutor executor, TestGateConfig gateConfig) {
         this.diffReader = diffReader;
         this.promptEngine = promptEngine;
         this.executor = executor;
+        this.gateConfig = gateConfig;
     }
 
     @Override
@@ -50,7 +53,9 @@ public class TestGateTool implements McpTool {
                         "projectPath", new McpProtocol.PropertyDef("string",
                                 "Absolute path to the Maven project root", null),
                         "strict", new McpProtocol.PropertyDef("string",
-                                "If 'true', also checks that all changed source files have corresponding test files (default: false)", null)
+                                "If 'true', also checks that all changed source files have corresponding test files (default: false)", null),
+                        "env", new McpProtocol.PropertyDef("string",
+                                "Environment profile: development, staging, or production (overrides config)", null)
                 ),
                 List.of("projectPath")
         );
@@ -60,16 +65,24 @@ public class TestGateTool implements McpTool {
     public McpProtocol.ToolResult execute(Map<String, Object> arguments) {
         String projectPath = (String) arguments.get("projectPath");
         boolean strict = "true".equalsIgnoreCase((String) arguments.getOrDefault("strict", "false"));
+        String requestEnv = (String) arguments.getOrDefault("env", null);
 
         if (projectPath == null || projectPath.isBlank()) {
             return McpProtocol.ToolResult.error("Parameter 'projectPath' is required.");
         }
 
+        // Resolve environment and profile
+        String environment = gateConfig.resolveEnvironment(requestEnv);
+        TestGateConfig.ProfileConfig profile = gateConfig.getProfile(environment);
+
         StringBuilder report = new StringBuilder();
         report.append("# Test Gate Report\n\n");
+        report.append("**Environment**: `%s`\n".formatted(environment));
+        report.append("**Coverage Threshold**: %.1f%%\n".formatted(profile.getCoverageThreshold()));
+        report.append("**Block on Failure**: %s\n\n".formatted(profile.isBlockOnFailure()));
 
         boolean gatePass = true;
-        List<String> issues = new java.util.ArrayList<>();
+        List<String> blockers = new java.util.ArrayList<>();
 
         // Phase 1: Analyze changed files
         report.append("## 1. Changed File Analysis\n\n");
@@ -81,7 +94,7 @@ public class TestGateTool implements McpTool {
                 List<String> untested = findUntestedFiles(projectPath, changedFiles);
                 if (!untested.isEmpty()) {
                     gatePass = false;
-                    issues.add("Missing test files for %d source files".formatted(untested.size()));
+                    blockers.add("Missing test files for %d source files".formatted(untested.size()));
                     report.append("### Missing Test Files\n\n");
                     for (String file : untested) {
                         report.append("- `%s` — no corresponding test file found\n".formatted(file));
@@ -106,7 +119,7 @@ public class TestGateTool implements McpTool {
             }
         } catch (Exception e) {
             report.append("File analysis failed: %s\n\n".formatted(e.getMessage()));
-            issues.add("File analysis error: " + e.getMessage());
+            blockers.add("File analysis error: " + e.getMessage());
         }
 
         // Phase 2: Execute tests
@@ -123,34 +136,36 @@ public class TestGateTool implements McpTool {
         report.append("| Skipped | %d |\n\n".formatted(testResult.skipped()));
 
         if (!testResult.success()) {
-            gatePass = false;
-            issues.add("Test execution failed (%d failures, %d errors)".formatted(
+            if (profile.isBlockOnFailure()) {
+                gatePass = false;
+            }
+            blockers.add("Test execution failed (%d failures, %d errors)".formatted(
                     testResult.failures(), testResult.errors()));
         }
 
         if (testResult.testsRun() == 0) {
-            issues.add("No tests were executed");
-            if (strict) {
+            blockers.add("No tests were executed");
+            if (!profile.isAllowSkipTests()) {
                 gatePass = false;
             }
         }
 
         // Phase 3: Gate decision
         report.append("## 3. Gate Decision\n\n");
-        if (gatePass && issues.isEmpty()) {
+        if (gatePass && blockers.isEmpty()) {
             report.append("### PASS — Merge/Deploy Allowed\n\n");
             report.append("All tests pass. No blocking issues found.\n\n");
         } else if (!gatePass) {
             report.append("### BLOCKED — Merge/Deploy Denied\n\n");
-            report.append("The following issues must be resolved:\n\n");
-            for (String issue : issues) {
-                report.append("- %s\n".formatted(issue));
+            report.append("The following blockers must be resolved:\n\n");
+            for (String b : blockers) {
+                report.append("- %s\n".formatted(b));
             }
             report.append("\n");
         } else {
             report.append("### PASS WITH WARNINGS\n\n");
-            for (String issue : issues) {
-                report.append("- WARNING: %s\n".formatted(issue));
+            for (String b : blockers) {
+                report.append("- WARNING: %s\n".formatted(b));
             }
             report.append("\n");
         }

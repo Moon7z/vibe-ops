@@ -1,6 +1,7 @@
 package com.vibeops.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Timer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ public class McpServerController {
 
     private final McpToolRegistry registry;
     private final ObjectMapper objectMapper;
+    private final VibeOpsMetrics metrics;
 
     @Value("${vibeops.mcp.version}")
     private String protocolVersion;
@@ -31,9 +33,10 @@ public class McpServerController {
     @Value("${vibeops.mcp.server-version}")
     private String serverVersion;
 
-    public McpServerController(McpToolRegistry registry, ObjectMapper objectMapper) {
+    public McpServerController(McpToolRegistry registry, ObjectMapper objectMapper, VibeOpsMetrics metrics) {
         this.registry = registry;
         this.objectMapper = objectMapper;
+        this.metrics = metrics;
     }
 
     @GetMapping
@@ -56,8 +59,9 @@ public class McpServerController {
             @RequestBody McpProtocol.JsonRpcRequest request) {
 
         log.info("MCP request: method={}, id={}", request.method(), request.id());
+        Timer.Sample timer = metrics.startTimer();
 
-        return switch (request.method()) {
+        ResponseEntity<McpProtocol.JsonRpcResponse> response = switch (request.method()) {
             case "initialize" -> handleInitialize(request);
             case "tools/list" -> handleToolsList(request);
             case "tools/call" -> handleToolCall(request);
@@ -65,6 +69,12 @@ public class McpServerController {
                     McpProtocol.JsonRpcResponse.error(-32601, "Method not found: " + request.method(), request.id())
             );
         };
+
+        String status = response.getBody() != null && response.getBody().error() == null ? "ok" : "error";
+        metrics.recordMcpRequest(request.method(), status);
+        metrics.stopTimer(timer, request.method());
+
+        return response;
     }
 
     private ResponseEntity<McpProtocol.JsonRpcResponse> handleInitialize(McpProtocol.JsonRpcRequest request) {
