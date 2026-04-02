@@ -2,6 +2,7 @@ package com.vibeops.mcp;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Timer;
+import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -56,7 +57,8 @@ public class McpServerController {
 
     @PostMapping
     public ResponseEntity<McpProtocol.JsonRpcResponse> handleRpc(
-            @RequestBody McpProtocol.JsonRpcRequest request) {
+            @RequestBody McpProtocol.JsonRpcRequest request,
+            HttpServletRequest httpRequest) {
 
         log.info("MCP request: method={}, id={}", request.method(), request.id());
         Timer.Sample timer = metrics.startTimer();
@@ -64,7 +66,7 @@ public class McpServerController {
         ResponseEntity<McpProtocol.JsonRpcResponse> response = switch (request.method()) {
             case "initialize" -> handleInitialize(request);
             case "tools/list" -> handleToolsList(request);
-            case "tools/call" -> handleToolCall(request);
+            case "tools/call" -> handleToolCall(request, httpRequest);
             default -> ResponseEntity.ok(
                     McpProtocol.JsonRpcResponse.error(-32601, "Method not found: " + request.method(), request.id())
             );
@@ -91,8 +93,8 @@ public class McpServerController {
         return ResponseEntity.ok(McpProtocol.JsonRpcResponse.success(result, request.id()));
     }
 
-    @SuppressWarnings("unchecked")
-    private ResponseEntity<McpProtocol.JsonRpcResponse> handleToolCall(McpProtocol.JsonRpcRequest request) {
+    private ResponseEntity<McpProtocol.JsonRpcResponse> handleToolCall(
+            McpProtocol.JsonRpcRequest request, HttpServletRequest httpRequest) {
         try {
             var params = objectMapper.convertValue(request.params(), McpProtocol.ToolCallParams.class);
             McpTool tool = registry.getTool(params.name());
@@ -102,7 +104,15 @@ public class McpServerController {
                         McpProtocol.ToolResult.error("Unknown tool: " + params.name()), request.id()));
             }
 
-            Map<String, Object> args = params.arguments() != null ? params.arguments() : Map.of();
+            Map<String, Object> args = params.arguments() != null
+                    ? new java.util.HashMap<>(params.arguments()) : new java.util.HashMap<>();
+
+            // Inject X-Vibeops-Env header if not already set in args
+            String envHeader = httpRequest.getHeader("X-Vibeops-Env");
+            if (envHeader != null && !envHeader.isBlank() && !args.containsKey("env")) {
+                args.put("env", envHeader);
+            }
+
             McpProtocol.ToolResult result = tool.execute(args);
             return ResponseEntity.ok(McpProtocol.JsonRpcResponse.success(result, request.id()));
 

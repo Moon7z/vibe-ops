@@ -89,7 +89,10 @@ public class McpAuthFilter {
             return false;
         }
         String token = authHeader.substring(7).trim();
-        return token.equals(authConfig.getApiKey());
+        // Constant-time comparison to prevent timing attacks
+        return java.security.MessageDigest.isEqual(
+                token.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                authConfig.getApiKey().getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     private boolean validateJwt(String authHeader) {
@@ -103,6 +106,16 @@ public class McpAuthFilter {
             if (parts.length != 3) return false;
 
             java.util.Base64.Decoder decoder = java.util.Base64.getUrlDecoder();
+
+            // Validate alg field to prevent algorithm confusion attacks
+            String header = new String(decoder.decode(parts[0]));
+            Map<?, ?> headerMap = objectMapper.readValue(header, Map.class);
+            String alg = (String) headerMap.get("alg");
+            if (!"HS256".equals(alg)) {
+                log.warn("JWT rejected: unsupported algorithm '{}', only HS256 allowed", alg);
+                return false;
+            }
+
             String payload = new String(decoder.decode(parts[1]));
             Map<?, ?> claims = objectMapper.readValue(payload, Map.class);
 

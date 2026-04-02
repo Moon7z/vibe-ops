@@ -1,6 +1,5 @@
 package com.vibeops.test;
 
-import com.vibeops.mcp.McpProtocol;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -17,7 +16,8 @@ class GenerateTestsToolTest {
 
     private final CodeDiffReader diffReader = new CodeDiffReader();
     private final TestPromptEngine promptEngine = new TestPromptEngine();
-    private final GenerateTestsTool tool = new GenerateTestsTool(diffReader, promptEngine);
+    private final TestQualityAnalyzer qualityAnalyzer = new TestQualityAnalyzer();
+    private final GenerateTestsTool tool = new GenerateTestsTool(diffReader, promptEngine, qualityAnalyzer);
 
     @Test
     @DisplayName("should have correct tool name")
