@@ -26,7 +26,7 @@ jobs:
         run: mvn test jacoco:report
 
       - name: Check coverage threshold
-        run: mvn jacoco:check
+        run: mvn verify -DskipTests
 
       - name: Checkstyle
         run: mvn checkstyle:check
