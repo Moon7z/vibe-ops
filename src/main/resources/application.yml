@@ -1,6 +1,6 @@
 spring:
   application:
-    name: vibe-ops
+    name: opszen
   threads:
     virtual:
       enabled: false
@@ -9,10 +9,10 @@ server:
   port: 3100
 
 # MCP Server config
-vibeops:
+opszen:
   mcp:
     version: "2024-11-05"
-    server-name: vibe-ops
+    server-name: opszen
     server-version: "0.1.0"
 
   # Timeouts
@@ -35,7 +35,7 @@ vibeops:
     require-approval: true
     max-auto-fixes-per-hour: 3
     rollback-retention: 24h
-    backup-dir: .vibeops/backup
+    backup-dir: .opszen/backup
 
   # Test gate profiles
   test-gate:
@@ -69,4 +69,4 @@ management:
         include: health, info, prometheus
   metrics:
     tags:
-      application: vibeops
+      application: opszen

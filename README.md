@@ -1,8 +1,8 @@
-# Vibe-Ops
+# OpsZen
 
-**Agentic Vibe-Ops Platform** — AI 生成代码的自主生产就绪守门员。
+**Agentic OpsZen Platform** — AI 生成代码的自主生产就绪守门员。
 
-Vibe-Ops 是一个 MCP (Model Context Protocol) Server，为 AI 编码场景提供全链路质量保障。它通过 JSON-RPC 协议暴露 10 个工具，覆盖从需求分析、代码扫描、测试生成到基础设施部署和故障自愈的完整流程。
+OpsZen 是一个 MCP (Model Context Protocol) Server，为 AI 编码场景提供全链路质量保障。它通过 JSON-RPC 协议暴露 10 个工具，覆盖从需求分析、代码扫描、测试生成到基础设施部署和故障自愈的完整流程。
 
 ## 核心功能
 
@@ -60,7 +60,7 @@ GET http://localhost:3100/actuator/health
 ```json
 {
   "mcpServers": {
-    "vibe-ops": {
+    "opszen": {
       "url": "http://localhost:3100/mcp"
     }
   }
@@ -77,7 +77,7 @@ Authorization: Bearer <your-api-key>
 完整的 `application.yml` 配置示例：
 
 ```yaml
-vibeops:
+opszen:
   auth:
     enabled: false
     type: api-key
@@ -91,7 +91,7 @@ vibeops:
     require-approval: true
     max-auto-fixes-per-hour: 3
     rollback-retention: 24h
-    backup-dir: .vibeops/backup
+    backup-dir: .opszen/backup
 
   test-gate:
     active-profile: development
@@ -121,7 +121,7 @@ management:
 ## 安全指南
 
 ### 鉴权配置
-- 生产环境务必设置 `vibeops.auth.enabled=true`
+- 生产环境务必设置 `opszen.auth.enabled=true`
 - API Key 模式：设置强随机密钥，通过 `Authorization: Bearer <key>` 传递
 - JWT 模式：配置 `jwt-secret`，支持 HMAC-SHA256 签名验证和过期检查
 - IP 白名单优先级高于 token 认证，白名单内的 IP 无需 token
@@ -129,15 +129,15 @@ management:
 ### Auto-Heal 风险提示
 - 默认 `propose-only` 模式，仅输出诊断和建议，不修改任何文件
 - `semi-auto` 模式会创建 Git 分支并提交修复代码，但不自动合并
-- `full-auto` 模式在 `VIBEOPS_ENV=production` 时自动拒绝执行
-- 所有修复操作记录审计日志（`.vibeops/audit/`），支持备份回滚
+- `full-auto` 模式在 `OPSZEN_ENV=production` 时自动拒绝执行
+- 所有修复操作记录审计日志（`.opszen/audit/`），支持备份回滚
 - 频率限制：默认每小时最多 3 次自动修复
 
 ### 生产部署建议
 - 使用反向代理（Nginx）限制 `/mcp` 端点的外部访问
 - 配置 HTTPS 加密传输
 - 定期轮换 API Key / JWT Secret
-- 监控 `vibeops_auth_requests_total{status="rejected"}` 指标
+- 监控 `opszen_auth_requests_total{status="rejected"}` 指标
 
 ## 可观测性
 
@@ -145,32 +145,32 @@ management:
 
 | 指标名 | 类型 | 标签 | 说明 |
 |--------|------|------|------|
-| `vibeops_scans_total` | Counter | severity | 扫描总数 |
-| `vibeops_tests_generated_total` | Counter | status, quality_level | 测试生成数 |
-| `vibeops_tests_run_total` | Counter | result | 测试执行结果 |
-| `vibeops_auto_heals_total` | Counter | mode, status | 自动修复次数 |
-| `vibeops_auth_requests_total` | Counter | status | 认证请求统计 |
-| `vibeops_mcp_requests_total` | Counter | method, status | MCP 请求统计 |
-| `vibeops_mcp_request_duration_seconds` | Timer | method | MCP 请求耗时 |
-| `vibeops_test_gate_results_total` | Counter | environment, result | 质量门禁结果 |
-| `vibeops_current_active_heals` | Gauge | - | 当前活跃修复数 |
+| `opszen_scans_total` | Counter | severity | 扫描总数 |
+| `opszen_tests_generated_total` | Counter | status, quality_level | 测试生成数 |
+| `opszen_tests_run_total` | Counter | result | 测试执行结果 |
+| `opszen_auto_heals_total` | Counter | mode, status | 自动修复次数 |
+| `opszen_auth_requests_total` | Counter | status | 认证请求统计 |
+| `opszen_mcp_requests_total` | Counter | method, status | MCP 请求统计 |
+| `opszen_mcp_request_duration_seconds` | Timer | method | MCP 请求耗时 |
+| `opszen_test_gate_results_total` | Counter | environment, result | 质量门禁结果 |
+| `opszen_current_active_heals` | Gauge | - | 当前活跃修复数 |
 
 ## 环境变量
 
 | 变量 | 说明 | 默认值 |
 |------|------|--------|
-| `VIBEOPS_AUTH_ENABLED` | 启用鉴权 | false |
-| `VIBEOPS_AUTH_TYPE` | 认证类型 | api-key |
-| `VIBEOPS_AUTH_API_KEY` | API Key | - |
-| `VIBEOPS_AUTH_JWT_SECRET` | JWT 密钥 | - |
-| `VIBEOPS_AUTH_IP_WHITELIST` | IP 白名单（逗号分隔） | - |
-| `VIBEOPS_ENV` | 运行环境 | development |
-| `VIBEOPS_AUTO_HEAL_MODE` | 自愈模式 | propose-only |
+| `OPSZEN_AUTH_ENABLED` | 启用鉴权 | false |
+| `OPSZEN_AUTH_TYPE` | 认证类型 | api-key |
+| `OPSZEN_AUTH_API_KEY` | API Key | - |
+| `OPSZEN_AUTH_JWT_SECRET` | JWT 密钥 | - |
+| `OPSZEN_AUTH_IP_WHITELIST` | IP 白名单（逗号分隔） | - |
+| `OPSZEN_ENV` | 运行环境 | development |
+| `OPSZEN_AUTO_HEAL_MODE` | 自愈模式 | propose-only |
 
 ## 项目结构
 
 ```
-src/main/java/com/vibeops/
+src/main/java/com/opszen/
 ├── mcp/          # MCP Server 核心（协议、路由、鉴权、指标）
 ├── spec/         # Spec Verifier 模块
 ├── scan/         # Static Scanner 模块

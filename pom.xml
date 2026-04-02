@@ -11,10 +11,10 @@
         <relativePath/>
     </parent>
 
-    <groupId>com.vibeops</groupId>
-    <artifactId>vibe-ops</artifactId>
+    <groupId>com.opszen</groupId>
+    <artifactId>opszen</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <name>Vibe-Ops</name>
+    <name>OpsZen</name>
     <description>Autonomous Production Bridge for AI-Generated Code</description>
 
     <properties>

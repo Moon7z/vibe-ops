@@ -1,4 +1,4 @@
-# Vibe-Ops Engineering Standards
+# OpsZen Engineering Standards
 
 > The production-readiness contract for all AI-generated code.
 
@@ -47,7 +47,7 @@ Every feature, endpoint, or module **MUST** address all 8 dimensions before depl
 
 ## 4. MCP Tool Contract
 
-All tools exposed via the Vibe-Ops MCP server must:
+All tools exposed via the OpsZen MCP server must:
 
 1. Accept input as a JSON object with a documented schema.
 2. Return results as structured Markdown in a `ToolResult`.
@@ -58,7 +58,7 @@ All tools exposed via the Vibe-Ops MCP server must:
 ## 5. Module Architecture
 
 ```
-com.vibeops
+com.opszen
 ├── mcp/           # MCP protocol layer (transport + registry)
 ├── spec/          # Spec-Verifier module (analyze-vibe)
 ├── scan/          # Static scanner module (run-vibe-check)
@@ -81,7 +81,7 @@ The overall deployment gate is determined by the highest severity finding:
 | None           | **ALL CLEAR** — auto-deploy eligible |
 
 ---
-*Vibe-Ops v0.1.0 — Making AI-generated code production-ready.*
+*OpsZen v0.1.0 — Making AI-generated code production-ready.*
 
 ## 7. Self-Healing Error Classification
 
