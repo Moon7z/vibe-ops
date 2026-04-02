@@ -53,7 +53,8 @@ class BackupManagerTest {
         Files.writeString(f, "x");
 
         backupManager.backup(List.of(f));
-        Thread.sleep(10); // ensure different timestamp
+        // Timestamp format is yyyyMMdd-HHmmss, need >1s gap for different names
+        Thread.sleep(1100);
         backupManager.backup(List.of(f));
 
         List<String> backups = backupManager.listBackups();
