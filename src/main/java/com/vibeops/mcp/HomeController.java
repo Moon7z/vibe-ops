@@ -25,7 +25,7 @@ public class HomeController {
         this.registry = registry;
     }
 
-    @GetMapping("/")
+    @GetMapping("/api/status")
     public ResponseEntity<Map<String, Object>> home() {
         var toolNames = registry.listTools().stream()
                 .map(t -> Map.of(
